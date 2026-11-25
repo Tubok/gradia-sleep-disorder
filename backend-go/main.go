@@ -111,7 +111,9 @@ func extractHistory(body map[string]any) []ChatMessage {
 				continue
 			}
 			role := strings.ToLower(extractString(item["role"]))
-			if role != "assistant" && role != "model" {
+			if role == "assistant" || role == "model" {
+				role = "model"
+			} else {
 				role = "user"
 			}
 			out = append(out, ChatMessage{Role: role, Content: text})
@@ -167,7 +169,7 @@ func buildSystemInstruction(useContext bool, predData map[string]any) string {
 }
 
 func callGeminiAPI(apiKey, systemInstruction, userMessage string, history []ChatMessage) (string, string, error) {
-	models := []string{"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"}
+	models := []string{"gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"}
 
 	if len(history) > 0 && history[len(history)-1].Role == "user" && history[len(history)-1].Content == userMessage {
 		history = history[:len(history)-1]
@@ -189,7 +191,7 @@ func callGeminiAPI(apiKey, systemInstruction, userMessage string, history []Chat
 	client := &http.Client{Timeout: 90 * time.Second}
 	var lastErr error
 
-	for _, model := range models {
+	for i, model := range models {
 		payload := map[string]any{
 			"contents": contents,
 		}
@@ -227,6 +229,9 @@ func callGeminiAPI(apiKey, systemInstruction, userMessage string, history []Chat
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBytes))
 			log.Printf("[Gemini Error] Model %s ditolak (%d): %s", model, resp.StatusCode, string(respBytes))
+			if (resp.StatusCode == http.StatusServiceUnavailable || resp.StatusCode == http.StatusTooManyRequests) && i < len(models)-1 {
+				time.Sleep(1500 * time.Millisecond)
+			}
 			continue
 		}
 
@@ -400,7 +405,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	model := "gradia-grounded-context"
 	if apiKeyConfigured {
 		provider = "Google Gemini API"
-		model = "gemini-2.5-flash"
+		model = "gemini-3.8-flash"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
