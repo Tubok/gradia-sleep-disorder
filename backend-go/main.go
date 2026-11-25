@@ -421,12 +421,27 @@ func main() {
 	if err != nil {
 		log.Fatalf("Gagal parsing ML_API_URL (%s): %v", mlBaseURL, err)
 	}
+
 	mlProxy := httputil.NewSingleHostReverseProxy(mlTarget)
+	originalDirector := mlProxy.Director
+	mlProxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = mlTarget.Host
+		req.Header.Set("X-Forwarded-Host", mlTarget.Host)
+	}
 	mlProxy.ModifyResponse = func(resp *http.Response) error {
 		resp.Header.Del("Access-Control-Allow-Origin")
 		resp.Header.Del("Access-Control-Allow-Methods")
 		resp.Header.Del("Access-Control-Allow-Headers")
 		return nil
+	}
+	mlProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("[ML Proxy Error] Gagal meneruskan ke %s: %v", mlTarget.String(), err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(map[string]any{
+			"error": fmt.Sprintf("Layanan ML tidak dapat dijangkau (%s): %v", mlBaseURL, err),
+		})
 	}
 
 	http.HandleFunc("/api/chat", withCORS(handleChat))
