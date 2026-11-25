@@ -1,0 +1,35 @@
+# Dependencies & build artifacts (Frontend)
+frontend-web/node_modules/
+frontend-web/.next/
+frontend-web/out/
+frontend-web/.env*
+frontend-web/.vercel
+node_modules/
+.next/
+out/
+.env*
+.vercel
+
+# Python & Machine Learning
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# Go binaries / build artifacts
+backend-go/*.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# OS / Misc
+.DS_Store
+*.pem
