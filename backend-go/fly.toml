@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for gradia-sleep-go on 2026-11-25T06:28:12Z
+#
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
+#
+
+app = 'gradia-sleep-go'
+primary_region = 'ams'
+
+[build]
+  [build.args]
+    GO_VERSION = '1.27.4'
+
+[env]
+  PORT = '8080'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
